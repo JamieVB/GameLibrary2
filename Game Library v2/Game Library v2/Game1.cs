@@ -19,7 +19,7 @@ namespace Game_Library_v2
         SpriteBatch spriteBatch;
         GraphicsDevice device;
 
-        Menu menu;
+        Texture2D texBG;
 
         public Game1()
         {
@@ -38,7 +38,7 @@ namespace Game_Library_v2
             // TODO: Add your initialization logic here
             graphics.PreferredBackBufferWidth = 1440;
             graphics.PreferredBackBufferHeight = 900;
-            graphics.IsFullScreen = false;
+            graphics.IsFullScreen = true;
             graphics.ApplyChanges();
             this.IsMouseVisible = true;
             Window.Title = "Game Library";
@@ -58,7 +58,8 @@ namespace Game_Library_v2
             // TODO: use this.Content to load your game content here
             device = graphics.GraphicsDevice;
 
-            menu = new Menu(Content);
+            texBG = Content.Load<Texture2D>("background");
+            Menu.Load(Content);
         }
 
         /// <summary>
@@ -92,12 +93,15 @@ namespace Game_Library_v2
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            Rectangle recScreen = new Rectangle(0, 0, device.PresentationParameters.BackBufferWidth, device.PresentationParameters.BackBufferHeight);
+
+            GraphicsDevice.Clear(Color.Black);
 
             // TODO: Add your drawing code here
             spriteBatch.Begin();
 
-            menu.Draw(spriteBatch);
+            spriteBatch.Draw(texBG, recScreen, Color.White);
+            Menu.Draw(spriteBatch, recScreen);
 
             spriteBatch.End();
 
