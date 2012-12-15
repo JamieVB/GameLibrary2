@@ -59,7 +59,7 @@ namespace Game_Library_v2
             device = graphics.GraphicsDevice;
 
             texBG = Content.Load<Texture2D>("background");
-            Menu.Load(Content);
+            Menu.Load(Content, device);
         }
 
         /// <summary>
