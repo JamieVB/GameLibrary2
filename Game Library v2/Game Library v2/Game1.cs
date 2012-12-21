@@ -18,6 +18,7 @@ namespace Game_Library_v2
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         GraphicsDevice device;
+        MouseState mouseState, prevMouseState;
 
         Texture2D texBG;
 
@@ -57,6 +58,8 @@ namespace Game_Library_v2
 
             // TODO: use this.Content to load your game content here
             device = graphics.GraphicsDevice;
+            mouseState = Mouse.GetState();
+            prevMouseState = mouseState;
 
             texBG = Content.Load<Texture2D>("background");
             Menu.Load(Content, device);
@@ -83,6 +86,10 @@ namespace Game_Library_v2
                 this.Exit();
 
             // TODO: Add your update logic here
+            prevMouseState = mouseState;
+            mouseState = Mouse.GetState();
+
+            Menu.Update(mouseState, prevMouseState);
 
             base.Update(gameTime);
         }
@@ -101,7 +108,7 @@ namespace Game_Library_v2
             spriteBatch.Begin();
 
             spriteBatch.Draw(texBG, recScreen, Color.White);
-            Menu.Draw(spriteBatch, recScreen);
+            Menu.Draw(spriteBatch, recScreen, device);
 
             spriteBatch.End();
 
