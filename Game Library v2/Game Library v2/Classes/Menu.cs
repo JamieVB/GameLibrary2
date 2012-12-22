@@ -35,7 +35,7 @@ namespace Game_Library_v2
             menuItems.OrderBy(x => x.parent);
             AssignPositions(device);
 
-            SelRec.offScreen = new Vector2(0, device.PresentationParameters.BackBufferHeight);
+            SelRec.Load(device);
         }
 
         /// <summary>
@@ -81,6 +81,20 @@ namespace Game_Library_v2
         static private void CheckMouse(MouseState mouseState, MouseState prevMouseState)
         {
             Rectangle buttonArea;
+            bool mouseOverItem = false;
+
+            //check each shown menu item to see if the mouse was over it
+            foreach (MenuItem item in menuItems.Where(x => x.IsShown()))
+            {
+                buttonArea = new Rectangle((int)item.pos.X - PADDING/2, (int)item.pos.Y - PADDING/2, BUTTON_WIDTH + PADDING, BUTTON_HEIGHT + PADDING);
+                if (buttonArea.Contains(new Point(mouseState.X, mouseState.Y)))
+                {
+                    mouseOverItem = true;
+                    SelRec.Update(item);
+                }
+            }
+            if (!mouseOverItem)
+                SelRec.Update();
 
             //if mouse was just clicked
             if (mouseState.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton == ButtonState.Released)
@@ -120,10 +134,10 @@ namespace Game_Library_v2
         /// <param name="device">Graphics device</param>
         static public void Draw(SpriteBatch spriteBatch, Rectangle recScreen, GraphicsDevice device)
         {
-            //first, draw a rectangle under any menu items that are selected
-            SelRec.DrawSelected(spriteBatch, device);
+            //Draw the highlight and selection rectangles
+            SelRec.Draw(spriteBatch);
 
-            //first, draw the first level of the menu
+            //draw the first level of the menu
             DrawLevel(spriteBatch, recScreen, -1);
             //then find each item that is selected, and draw their children
             for (int i = 0; i < menuItems.Count(); i++)
@@ -230,20 +244,115 @@ namespace Game_Library_v2
         static class SelRec
         {
             public const int STATE_STOPPED = 0, STATE_MOVING = 1;
-            public const int SPEED = 100;
-            static public Vector2 offScreen;
-            static public int state = STATE_STOPPED;
+            public const float SPEED = 750;
+            static public Vector2 destination;
+            static public int state, offScreen;
+            static public Rectangle recHighlight;
+            static public Texture2D texWhite;
 
             /// <summary>
-            /// Draw a rectangle on any selected menu items
+            /// Set initial values and stuff
+            /// </summary>
+            /// <param name="device">Graphics device</param>
+            static public void Load(GraphicsDevice device)
+            {
+                state = STATE_STOPPED;
+                offScreen = device.PresentationParameters.BackBufferHeight;
+                destination = new Vector2(0, offScreen);
+                recHighlight = new Rectangle(0, (int)offScreen, MARGIN + BUTTON_WIDTH + PADDING / 2 + 1, BUTTON_HEIGHT + PADDING);
+                texWhite = new Texture2D(device, 1, 1);
+                texWhite.SetData(new[] { Color.White });
+            }
+
+            /// <summary>
+            /// Update the position and destination of the highlight rectangle
+            /// </summary>
+            /// <param name="item">The item the mouse is currently over</param>
+            static public void Update(MenuItem item = null)
+            {
+                UpdateDestination(item);
+                UpdatePosition();
+            }
+
+            /// <summary>
+            /// Update the destination of the highlight rectangle
+            /// </summary>
+            /// <param name="item">The item the mouse is currently over</param>
+            static private void UpdateDestination(MenuItem item)
+            {
+                //if the mouse isn't over any items, move the highlight rec off the screen
+                if (item == null)
+                {
+                    destination = new Vector2(recHighlight.X, offScreen);
+                }
+                //else if the rectangle is on the same column as the item the mouse is over, just move the rectangle up or down
+                else if (recHighlight.X < item.pos.X && (recHighlight.X + MARGIN + BUTTON_WIDTH + PADDING) > item.pos.X)
+                {
+                    destination = new Vector2(recHighlight.X, item.pos.Y - PADDING / 2);
+                }
+                //else if the rectangle is already offscreen, move it to the proper column, so the previous condition will start to move it to the right place
+                else if (recHighlight.Y >= offScreen)
+                {
+                    //since we're switching columns here, this is the best place to change the width as well
+                    if (item.parent == -1)
+                    {
+                        recHighlight.X = 0;
+                        recHighlight.Width = MARGIN + BUTTON_WIDTH + PADDING / 2 + 1;
+                    }
+                    else
+                    {
+                        recHighlight.X = (int)item.pos.Y - PADDING / 2;
+                        recHighlight.Width = BUTTON_WIDTH + PADDING / 2;
+                    }
+                }
+                //else if the rectangle is just in the wrong column, move it offscreen so the previous condition can move it to the correct column
+                else
+                {
+                    destination = new Vector2(recHighlight.X, offScreen);
+                }
+            }
+
+            /// <summary>
+            /// Update the position of the highlight rectangle, based on its destination
+            /// </summary>
+            static private void UpdatePosition()
+            {
+                //if the position is close to the destination, just move it straight there
+                if (recHighlight.Y - destination.Y < SPEED / 60 && recHighlight.Y - destination.Y > -SPEED / 60)
+                {
+                    recHighlight.Y = (int)destination.Y;
+                }
+                else
+                {
+                    //otherwise, just move it up or down accordingly
+                    if (recHighlight.Y > destination.Y)
+                    {
+                        recHighlight.Y -= (int)(SPEED / 60);
+                    }
+                    else
+                    {
+                        recHighlight.Y += (int)(SPEED / 60);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Draw the selection and highlight rectangles
             /// </summary>
             /// <param name="spriteBatch">Sprite batch</param>
-            /// <param name="device">Graphics device</param>
-            static public void DrawSelected(SpriteBatch spriteBatch, GraphicsDevice device)
+            static public void Draw(SpriteBatch spriteBatch)
+            {
+                DrawHighlightBox(spriteBatch);
+                DrawSelectBox(spriteBatch);
+            }
+
+            /// <summary>
+            /// Draw a rectangle under any selected menu items
+            /// </summary>
+            /// <param name="spriteBatch">Sprite batch</param>
+            static public void DrawSelectBox(SpriteBatch spriteBatch)
             {
                 int left, top, width, height;
-                Texture2D whiteTex = new Texture2D(device, 1, 1);
-                whiteTex.SetData(new[] { Color.White });
 
                 foreach (MenuItem item in menuItems)
                 {
@@ -263,9 +372,18 @@ namespace Game_Library_v2
                         top = (int)item.pos.Y - PADDING / 2;
                         height = BUTTON_HEIGHT + PADDING;
 
-                        spriteBatch.Draw(whiteTex, new Rectangle(left, top, width, height), new Color(204, 85, 0) * 0.8f);
+                        spriteBatch.Draw(texWhite, new Rectangle(left, top, width, height), new Color(204, 85, 0) * 0.8f);
                     }
                 }
+            }
+
+            /// <summary>
+            /// Draw the highlight rectangle wherever it's supposed to be
+            /// </summary>
+            /// <param name="spriteBatch">Sprite batch</param>
+            static public void DrawHighlightBox(SpriteBatch spriteBatch)
+            {
+                spriteBatch.Draw(texWhite, recHighlight, new Color(0, 64, 128) * 0.8f);
             }
         }
     }

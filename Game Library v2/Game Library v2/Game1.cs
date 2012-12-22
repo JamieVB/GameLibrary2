@@ -39,7 +39,7 @@ namespace Game_Library_v2
             // TODO: Add your initialization logic here
             graphics.PreferredBackBufferWidth = 1440;
             graphics.PreferredBackBufferHeight = 900;
-            graphics.IsFullScreen = true;
+            graphics.IsFullScreen = false;
             graphics.ApplyChanges();
             this.IsMouseVisible = true;
             Window.Title = "Game Library";
