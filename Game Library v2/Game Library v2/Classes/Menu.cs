@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Xml.Linq;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
@@ -36,6 +37,14 @@ namespace Game_Library_v2
             AssignPositions(device);
 
             SelRec.Load(device);
+
+            LoadMenuItems();
+        }
+
+        static private void LoadMenuItems()
+        {
+            XDocument xml = XDocument.Load("menu.xml");
+            List<string> text = xml.Descendants("Game").Select(x => x.Value).ToList();
         }
 
         /// <summary>
@@ -286,7 +295,7 @@ namespace Game_Library_v2
                     destination = new Vector2(recHighlight.X, offScreen);
                 }
                 //else if the rectangle is on the same column as the item the mouse is over, just move the rectangle up or down
-                else if (recHighlight.X < item.pos.X && (recHighlight.X + MARGIN + BUTTON_WIDTH + PADDING) > item.pos.X)
+                else if (recHighlight.X < item.pos.X && (recHighlight.X + BUTTON_WIDTH + PADDING) > item.pos.X)
                 {
                     destination = new Vector2(recHighlight.X, item.pos.Y - PADDING / 2);
                 }
@@ -301,8 +310,8 @@ namespace Game_Library_v2
                     }
                     else
                     {
-                        recHighlight.X = (int)item.pos.Y - PADDING / 2;
-                        recHighlight.Width = BUTTON_WIDTH + PADDING / 2;
+                        recHighlight.X = (int)item.pos.X - PADDING / 2;
+                        recHighlight.Width = BUTTON_WIDTH + PADDING;
                     }
                 }
                 //else if the rectangle is just in the wrong column, move it offscreen so the previous condition can move it to the correct column
